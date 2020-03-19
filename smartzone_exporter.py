@@ -49,13 +49,13 @@ class SmartZoneCollector():
 
         # Set `verify` variable to enable or disable SSL checking
         # Use string method format methods to create new string with inserted value (in this case, the URL)
-        s.get('{}/wsg/api/public/v5_0/session'.format(self._target), verify=self._insecure)
+        s.get('{}/wsg/api/public/v9_0/session'.format(self._target), verify=self._insecure)
 
         # Define URL arguments as a dictionary of strings 'payload'
         payload = {'username': self._user, 'password': self._password}
 
         # Call the payload using the json parameter
-        r = s.post('{}/wsg/api/public/v5_0/session'.format(self._target), json=payload, verify=self._insecure)
+        r = s.post('{}/wsg/api/public/v9_0/session'.format(self._target), json=payload, verify=self._insecure)
 
         # Raise bad requests
         r.raise_for_status()
@@ -75,9 +75,9 @@ class SmartZoneCollector():
             # For APs, use POST and API query to reduce number of requests and improve performance
             # To-do: set dynamic AP limit based on SmartZone inventory
             raw = {'page': 0, 'start': 0, 'limit': 1000}
-            r = requests.post('{}/wsg/api/public/v5_0/{}'.format(self._target, api_path), json=raw, headers=self._headers, verify=self._insecure)
+            r = requests.post('{}/wsg/api/public/v9_0/{}'.format(self._target, api_path), json=raw, headers=self._headers, verify=self._insecure)
         else:
-            r = requests.get('{}/wsg/api/public/v5_0/{}'.format(self._target, api_path), headers=self._headers, verify=self._insecure)
+            r = requests.get('{}/wsg/api/public/v9_0/{}'.format(self._target, api_path), headers=self._headers, verify=self._insecure)
 
         result = json.loads(r.text)
         return result
