@@ -139,32 +139,32 @@ class SmartZoneCollector():
                 labels=["zone_name","zone_id"])
         }
 
-        ap_metrics = {
-            'alerts':
-                GaugeMetricFamily('smartzone_ap_alerts',
-                'Number of AP alerts',
-                labels=["zone","ap_group","mac","name","lat","long"]),
-            'latency24G':
-                GaugeMetricFamily('smartzone_ap_latency_24g_milliseconds',
-                'AP latency on 2.4G channels in milliseconds',
-                labels=["zone","ap_group","mac","name","lat","long"]),
-            'latency50G':
-                GaugeMetricFamily('smartzone_ap_latency_5g_milliseconds',
-                'AP latency on 5G channels in milliseconds',
-                labels=["zone","ap_group","mac","name","lat","long"]),
-            'numClients24G':
-                GaugeMetricFamily('smartzone_ap_connected_clients_24g',
-                'Number of clients connected to 2.4G channels on this AP',
-                labels=["zone","ap_group","mac","name","lat","long"]),
-            'numClients5G':
-                GaugeMetricFamily('smartzone_ap_connected_clients_5g',
-                'Number of clients connected to 5G channels on this AP',
-                labels=["zone","ap_group","mac","name","lat","long"]),
-            'status':
-                GaugeMetricFamily('smartzone_ap_status',
-                'AP status',
-                labels=["zone","ap_group","mac","name","status","lat","long"])
-                }
+        # ap_metrics = {
+        #     'alerts':
+        #         GaugeMetricFamily('smartzone_ap_alerts',
+        #         'Number of AP alerts',
+        #         labels=["zone","ap_group","mac","name","lat","long"]),
+        #     'latency24G':
+        #         GaugeMetricFamily('smartzone_ap_latency_24g_milliseconds',
+        #         'AP latency on 2.4G channels in milliseconds',
+        #         labels=["zone","ap_group","mac","name","lat","long"]),
+        #     'latency50G':
+        #         GaugeMetricFamily('smartzone_ap_latency_5g_milliseconds',
+        #         'AP latency on 5G channels in milliseconds',
+        #         labels=["zone","ap_group","mac","name","lat","long"]),
+        #     'numClients24G':
+        #         GaugeMetricFamily('smartzone_ap_connected_clients_24g',
+        #         'Number of clients connected to 2.4G channels on this AP',
+        #         labels=["zone","ap_group","mac","name","lat","long"]),
+        #     'numClients5G':
+        #         GaugeMetricFamily('smartzone_ap_connected_clients_5g',
+        #         'Number of clients connected to 5G channels on this AP',
+        #         labels=["zone","ap_group","mac","name","lat","long"]),
+        #     'status':
+        #         GaugeMetricFamily('smartzone_ap_status',
+        #         'AP status',
+        #         labels=["zone","ap_group","mac","name","status","lat","long"])
+        #         }
 
         self.get_session()
 
@@ -187,6 +187,7 @@ class SmartZoneCollector():
         # - Grab the zone name and zone ID for labeling purposes
         # - Loop through the statuses in statuses
         # - For each status, get the value for the status in each zone and add to the metric
+
         for zone in self.get_metrics(zone_metrics, 'system/inventory')['list']:
             zone_name = zone['zoneName']
             zone_id = zone['zoneId']
@@ -198,34 +199,34 @@ class SmartZoneCollector():
 
         # Get SmartZone AP metrics
         # Generate the metrics based on the values
-        for ap in self.get_metrics(ap_metrics, 'query/ap')['list']:
-            try:
-                lat = ap.get('deviceGps').split(',')[0]
-                long = ap.get('deviceGps').split(',')[1]
-            except IndexError:
-                lat = 'none'
-                long = 'none'
-            for s in self._statuses:
-                # 'Status' is a string value only, so we can't export the default value
-                if s == 'status':
-                    state_name = ['Online','Offline','Flagged']
-                    # By default set value to 0 and increase to 1 to reflect current state
-                    # Similar to how node_exporter handles systemd states
-                    for n in state_name:
-                        value = 0
-                        if ap.get(s) == str(n):
-                            value = 1
-                        # Wrap the zone and group names in str() to avoid issues with None values at export time
-                        ap_metrics[s].add_metric([str(ap['zoneName']), str(ap['apGroupName']), ap['apMac'], ap['deviceName'], n, lat, long], value)
-                else:
-                    if ap.get(s) is not None:
-                        ap_metrics[s].add_metric([str(ap['zoneName']), str(ap['apGroupName']), ap['apMac'], ap['deviceName'], lat, long], ap.get(s))
-                    # Return 0 for metrics with values of None
-                    else:
-                        ap_metrics[s].add_metric([str(ap['zoneName']), str(ap['apGroupName']), ap['apMac'], ap['deviceName'], lat, long], 0)
+        # for ap in self.get_metrics(ap_metrics, 'aps')['list']:
+        #     try:
+        #         lat = ap.get('deviceGps').split(',')[0]
+        #         long = ap.get('deviceGps').split(',')[1]
+        #     except IndexError:
+        #         lat = 'none'
+        #         long = 'none'
+        #     for s in self._statuses:
+        #         # 'Status' is a string value only, so we can't export the default value
+        #         if s == 'status':
+        #             state_name = ['Online','Offline','Flagged']
+        #             # By default set value to 0 and increase to 1 to reflect current state
+        #             # Similar to how node_exporter handles systemd states
+        #             for n in state_name:
+        #                 value = 0
+        #                 if ap.get(s) == str(n):
+        #                     value = 1
+        #                 # Wrap the zone and group names in str() to avoid issues with None values at export time
+        #                 ap_metrics[s].add_metric([str(ap['zoneName']), str(ap['apGroupName']), ap['apMac'], ap['deviceName'], n, lat, long], value)
+        #         else:
+        #             if ap.get(s) is not None:
+        #                 ap_metrics[s].add_metric([str(ap['zoneName']), str(ap['apGroupName']), ap['apMac'], ap['deviceName'], lat, long], ap.get(s))
+        #             # Return 0 for metrics with values of None
+        #             else:
+        #                 ap_metrics[s].add_metric([str(ap['zoneName']), str(ap['apGroupName']), ap['apMac'], ap['deviceName'], lat, long], 0)
 
-        for m in ap_metrics.values():
-            yield m
+        # for m in ap_metrics.values():
+        #     yield m
 
 
 # Function to parse command line arguments and pass them to the collector
