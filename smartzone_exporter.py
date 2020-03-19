@@ -90,18 +90,22 @@ class SmartZoneCollector():
                 GaugeMetricFamily('smartzone_controller_model',
                 'SmartZone controller model',
                 labels=["id", "model"]),
+            'description':
+                GaugeMetricFamily('smartzone_controller_description',
+                'SmartZone controller description',
+                labels=["id", "description"]),
             'serialNumber':
                 GaugeMetricFamily('smartzone_controller_serial_number',
                 'SmartZone controller serial number',
+                labels=["id", "serialNumber"]),
+            'clusterRole':
+                GaugeMetricFamily('smartzone_controller_cluster_role',
+                'SmartZone controller cluster role',
                 labels=["id", "serialNumber"]),
             'uptimeInSec':
                 CounterMetricFamily('smartzone_controller_uptime_seconds',
                 'Controller uptime in sections',
                 labels=["id"]),
-            'hostName':
-                GaugeMetricFamily('smartzone_controller_hostname',
-                'Controller hostname',
-                labels=["id", "hostName"]),
             'version':
                 GaugeMetricFamily('smartzone_controller_version',
                 'Controller version',
@@ -129,10 +133,6 @@ class SmartZoneCollector():
                 GaugeMetricFamily('smartzone_zone_disconnected_aps',
                 'Number of disconnected zone APs',
                 labels=["zone_name","zone_id"]),
-            # 'rebootingAPs':
-            #     GaugeMetricFamily('smartzone_zone_rebooting_aps',
-            #     'Number of zone APs in rebooting state',
-            #     labels=["zone_name","zone_id"]),
             'clients':
                 GaugeMetricFamily('smartzone_zone_total_connected_clients',
                 'Total number of connected clients in zone',
