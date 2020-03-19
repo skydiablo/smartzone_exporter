@@ -110,7 +110,7 @@ class SmartZoneCollector():
                 GaugeMetricFamily('smartzone_controller_ap_firmware_version',
                 'Firmware version on controller APs',
                 labels=["id", "apVersion"])
-                }
+        }
 
         zone_metrics = {
             'totalAPs':
@@ -129,15 +129,15 @@ class SmartZoneCollector():
                 GaugeMetricFamily('smartzone_zone_disconnected_aps',
                 'Number of disconnected zone APs',
                 labels=["zone_name","zone_id"]),
-            'rebootingAPs':
-                GaugeMetricFamily('smartzone_zone_rebooting_aps',
-                'Number of zone APs in rebooting state',
-                labels=["zone_name","zone_id"]),
+            # 'rebootingAPs':
+            #     GaugeMetricFamily('smartzone_zone_rebooting_aps',
+            #     'Number of zone APs in rebooting state',
+            #     labels=["zone_name","zone_id"]),
             'clients':
                 GaugeMetricFamily('smartzone_zone_total_connected_clients',
                 'Total number of connected clients in zone',
                 labels=["zone_name","zone_id"])
-                }
+        }
 
         ap_metrics = {
             'alerts':
