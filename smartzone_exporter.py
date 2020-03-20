@@ -139,6 +139,21 @@ class SmartZoneCollector():
                 labels=["zone_name","zone_id"])
         }
 
+        ap_list = {
+            'mac':
+                GaugeMetricFamily('smartzone_aps_list_ap_mac',
+                'SmartZone APs list ap mac',
+                labels=["zone_id","ap_mame","mac"]),
+            'apGroupId':
+                GaugeMetricFamily('smartzone_aps_list_ap_groupId',
+                'SmartZone APs list ap groupId',
+                labels=["zone_id","ap_mame","groupId"]),
+            'serial':
+                GaugeMetricFamily('smartzone_aps_list_ap_serial',
+                'SmartZone APs list ap serial number',
+                labels=["zone_id","ap_mame","serial"])
+        }
+
         # ap_metrics = {
         #     'alerts':
         #         GaugeMetricFamily('smartzone_ap_alerts',
@@ -195,6 +210,22 @@ class SmartZoneCollector():
                 zone_metrics[s].add_metric([zone_name, zone_id], zone.get(s))
 
         for m in zone_metrics.values():
+            yield m
+
+        # Get APs list per zone or a domani
+        # For each APs captured from the query:
+        # - Grab the zone ID for labeling purposes
+        # - For each APs, get mac, zoneID, apGroupIdm, name, lanPortSize
+
+        for ap in self.get_metrics(ap_list, 'aps')['list']:
+            zone_id = ap['zoneId']
+            ap_mame = ap['name']
+            for s in self._statuses:
+                # Export a dummy value for string-only metrics
+                extra = ap[s]
+                ap_list[s].add_metric([zone_id, ap_mame, extra], 1)
+
+        for m in ap_list.values():
             yield m
 
         # Get SmartZone AP metrics
