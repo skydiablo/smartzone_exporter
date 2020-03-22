@@ -345,18 +345,41 @@ class SmartZoneCollector():
         }
 
         ap_list = {
-            'mac':
-                GaugeMetricFamily('smartzone_aps_list_ap_mac',
-                                  'SmartZone APs list ap mac',
-                                  labels=["zone_id", "ap_mame", "mac"]),
             'apGroupId':
                 GaugeMetricFamily('smartzone_aps_list_ap_groupId',
                                   'SmartZone APs list ap groupId',
-                                  labels=["zone_id", "ap_mame", "groupId"]),
+                                  labels=["zone_id", "ap_mame", "ap_mac", "groupId"]),
             'serial':
                 GaugeMetricFamily('smartzone_aps_list_ap_serial',
                                   'SmartZone APs list ap serial number',
-                                  labels=["zone_id", "ap_mame", "serial"])
+                                  labels=["zone_id", "ap_mame", "ap_mac", "serial"])
+        }
+
+        ap_summary_list = {
+            'location':
+                GaugeMetricFamily('smartzone_aps_location',
+                                  'SmartZone AP location',
+                                  labels=["ap_mame", "ap_mac", "location"]),
+            'configState':
+                GaugeMetricFamily('smartzone_aps_configState',
+                                  'SmartZone AP configState',
+                                  labels=["ap_mame", "ap_mac", "configState"]),
+            'criticalCount':
+                GaugeMetricFamily('smartzone_aps_alarms_criticalCount',
+                                  'SmartZone AP criticalCount alarm',
+                                  labels=["ap_mame", "ap_mac"]),
+            'majorCount':
+                GaugeMetricFamily('smartzone_aps_alarms_majorCount',
+                                  'SmartZone majorCount alarms',
+                                  labels=["ap_mame", "ap_mac"]),
+            'minorCount':
+                GaugeMetricFamily('smartzone_aps_alarms_minorCount',
+                                  'SmartZone AP minorCount alarms',
+                                  labels=["ap_mame", "ap_mac"]),
+            'warningCount':
+                GaugeMetricFamily('smartzone_aps_alarms_warningCount',
+                                  'SmartZone AP warningCount alarm',
+                                  labels=["ap_mame", "ap_mac"])
         }
 
         domain_metrics = {
@@ -465,12 +488,27 @@ class SmartZoneCollector():
         for ap in self.get_metrics(ap_list, 'aps')['list']:
             zone_id = ap['zoneId']
             ap_mame = ap['name']
+            ap_mac = ap['mac']
             for s in self._statuses:
                 # Export a dummy value for string-only metrics
                 extra = ap[s]
-                ap_list[s].add_metric([zone_id, ap_mame, extra], 1)
+                ap_list[s].add_metric([zone_id, ap_mame, ap_mac, extra], 1)
 
         for m in ap_list.values():
+            yield m
+
+        # Get APs summary information
+        for ap in self.get_metrics(ap_summary_list, 'aps/lineman')['list']:
+            ap_mame = ap['name']
+            ap_mac = ap['mac']
+            for s in self._statuses:
+                if s == 'criticalCount' or s == 'majorCount' or s == 'minorCount' or s == 'warningCount':
+                    ap_summary_list[s].add_metric([ap_mame, ap_mac], ap['alarms'].get(s))
+                else:
+                    extra = ap[s]
+                    ap_summary_list[s].add_metric([ap_mame, ap_mac, extra], 1)
+
+        for m in ap_summary_list.values():
             yield m
 
         # Collect domain information
