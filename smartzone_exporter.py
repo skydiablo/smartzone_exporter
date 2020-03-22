@@ -360,6 +360,29 @@ class SmartZoneCollector():
                                   labels=["zone_id", "ap_mame", "serial"])
         }
 
+        domain_metrics = {
+            'domainType':
+                GaugeMetricFamily('smartzone_domain_type',
+                                  'SmartZone Domain name',
+                                  labels=["domain_id", "domain_name", "domainType"]),
+            'parentDomainId':
+                GaugeMetricFamily('smartzone_domain_parentDomainId',
+                                  'SmartZone Domain parent domain ID',
+                                  labels=["domain_id", "domain_name"]),
+            'subDomainCount':
+                GaugeMetricFamily('smartzone_domain_subDomainCount',
+                                  'SmartZone Domain sub domain numbers',
+                                  labels=["domain_id", "domain_name"]),
+            'apCount':
+                GaugeMetricFamily('smartzone_domain_apCount',
+                                  'SmartZone Domain total count of APs',
+                                  labels=["domain_id", "domain_name"]),
+            'zoneCount':
+                GaugeMetricFamily('smartzone_domain_zoneCount',
+                                  'SmartZone Domain count of zones',
+                                  labels=["domain_id", "domain_name"])
+        }
+
         self.get_session()
 
         id = 0
@@ -432,6 +455,19 @@ class SmartZoneCollector():
         for m in ap_list.values():
             yield m
 
+        # Collect domain information
+        for c in self.get_metrics(domain_metrics, 'domains')['list']:
+            domain_id = c['id']
+            domain_name = c['name']
+            for s in self._statuses:
+                if s == 'uptimeInSec':
+                    domain_metrics[s].add_metric([domain_id, domain_name], c.get(s))
+                # Export a dummy value for string-only metrics
+                else:
+                    extra = c[s]
+                    domain_metrics[s].add_metric([domain_id, domain_name, extra], 1)
+        for m in domain_metrics.values():
+            yield m
 
 # Function to parse command line arguments and pass them to the collector
 def parse_args():
