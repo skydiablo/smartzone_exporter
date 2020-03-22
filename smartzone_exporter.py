@@ -333,6 +333,18 @@ class SmartZoneCollector():
             }
         }
 
+        system_summary_metric = {
+            'maxApOfCluster':
+                GaugeMetricFamily('smartzone_cluster_maxAPs',
+                                  'SmartZone Cluster number of maximum possible connected APs',
+                                  labels=["id"]),
+            'totalRemainingApCapacity':
+                GaugeMetricFamily('smartzone_cluster_totalRemainingApCapacity',
+                                  'SmartZone Cluster number of total remaining possible connected APs',
+                                  labels=["id"]),
+        }
+
+
         ap_list = {
             'mac':
                 GaugeMetricFamily('smartzone_aps_list_ap_mac',
@@ -380,6 +392,14 @@ class SmartZoneCollector():
                     system_metric[c][s].add_metric([id], system[0][c].get(s))
             for m in system_metric[c].values():
                 yield m
+
+        # Ges SmartZone system summary
+        c = self.get_metrics(system_summary_metric, 'system/devicesSummary')
+        for s in self._statuses:
+            system_summary_metric[s].add_metric([id], c.get(s))
+
+        for m in system_summary_metric.values():
+            yield m
 
         # Get SmartZone inventory per zone
         # For each zone captured from the query:
