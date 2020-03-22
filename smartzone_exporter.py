@@ -344,7 +344,6 @@ class SmartZoneCollector():
                                   labels=["id"]),
         }
 
-
         ap_list = {
             'mac':
                 GaugeMetricFamily('smartzone_aps_list_ap_mac',
@@ -368,7 +367,7 @@ class SmartZoneCollector():
             'parentDomainId':
                 GaugeMetricFamily('smartzone_domain_parentDomainId',
                                   'SmartZone Domain parent domain ID',
-                                  labels=["domain_id", "domain_name"]),
+                                  labels=["domain_id", "domain_name", "parentDomainId"]),
             'subDomainCount':
                 GaugeMetricFamily('smartzone_domain_subDomainCount',
                                   'SmartZone Domain sub domain numbers',
@@ -381,6 +380,25 @@ class SmartZoneCollector():
                 GaugeMetricFamily('smartzone_domain_zoneCount',
                                   'SmartZone Domain count of zones',
                                   labels=["domain_id", "domain_name"])
+        }
+
+        license_metrics = {
+            'description':
+                GaugeMetricFamily('smartzone_license_description',
+                                  'SmartZone License description',
+                                  labels=["license_name", "description"]),
+            'count':
+                GaugeMetricFamily('smartzone_license_count',
+                                  'SmartZone License count',
+                                  labels=["license_name"]),
+            'createTime':
+                GaugeMetricFamily('smartzone_license_createTime',
+                                  'SmartZone License created date',
+                                  labels=["license_name", "createTime"]),
+            'expireDate':
+                GaugeMetricFamily('smartzone_license_expireDate',
+                                  'SmartZone License expire date',
+                                  labels=["license_name", "expireDate"])
         }
 
         self.get_session()
@@ -460,14 +478,29 @@ class SmartZoneCollector():
             domain_id = c['id']
             domain_name = c['name']
             for s in self._statuses:
-                if s == 'domainType':
+                if s == 'domainType' or s == 'parentDomainId':
                     extra = c[s]
                     domain_metrics[s].add_metric([domain_id, domain_name, extra], 1)
                 else:
                     domain_metrics[s].add_metric([domain_id, domain_name], c.get(s))
-                    
+
         for m in domain_metrics.values():
             yield m
+
+        # Collect license information
+        for c in self.get_metrics(license_metrics, 'licenses')['list']:
+            license_name = c['name']
+            for s in self._statuses:
+                if s == 'count':
+                    license_metrics[s].add_metric([license_name], c.get(s))
+                else:
+                    extra = c[s]
+                    license_metrics[s].add_metric([license_name, extra], 1)
+
+
+        for m in license_metrics.values():
+            yield m
+
 
 # Function to parse command line arguments and pass them to the collector
 def parse_args():
