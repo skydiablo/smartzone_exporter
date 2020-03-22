@@ -42,7 +42,7 @@ class SmartZoneCollector():
     def get_session(self):
         # Disable insecure request warnings if SSL verification is disabled
         if self._insecure == False:
-             requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+            requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
         # Session object used to keep persistent cookies and connection pooling
         s = requests.Session()
@@ -67,7 +67,6 @@ class SmartZoneCollector():
         # Integrate the session ID into the header
         self._headers = {'Content-Type': 'application/json;charset=UTF-8', 'Cookie': 'JSESSIONID={}'.format(session_id)}
 
-
     def get_metrics(self, metrics, api_path):
         # Add the individual URL paths for the API call
         self._statuses = list(metrics.keys())
@@ -75,127 +74,312 @@ class SmartZoneCollector():
             # For APs, use POST and API query to reduce number of requests and improve performance
             # To-do: set dynamic AP limit based on SmartZone inventory
             raw = {'page': 0, 'start': 0, 'limit': 1000}
-            r = requests.post('{}/wsg/api/public/v9_0/{}'.format(self._target, api_path), json=raw, headers=self._headers, verify=self._insecure)
+            r = requests.post('{}/wsg/api/public/v9_0/{}'.format(self._target, api_path), json=raw,
+                              headers=self._headers, verify=self._insecure)
         else:
-            r = requests.get('{}/wsg/api/public/v9_0/{}'.format(self._target, api_path), headers=self._headers, verify=self._insecure)
-
+            r = requests.get('{}/wsg/api/public/v9_0/{}'.format(self._target, api_path), headers=self._headers,
+                             verify=self._insecure)
         result = json.loads(r.text)
         return result
-
 
     def collect(self):
 
         controller_metrics = {
             'model':
                 GaugeMetricFamily('smartzone_controller_model',
-                'SmartZone controller model',
-                labels=["id", "model"]),
+                                  'SmartZone controller model',
+                                  labels=["id", "model"]),
             'description':
                 GaugeMetricFamily('smartzone_controller_description',
-                'SmartZone controller description',
-                labels=["id", "description"]),
+                                  'SmartZone controller description',
+                                  labels=["id", "description"]),
             'serialNumber':
                 GaugeMetricFamily('smartzone_controller_serial_number',
-                'SmartZone controller serial number',
-                labels=["id", "serialNumber"]),
+                                  'SmartZone controller serial number',
+                                  labels=["id", "serialNumber"]),
             'clusterRole':
                 GaugeMetricFamily('smartzone_controller_cluster_role',
-                'SmartZone controller cluster role',
-                labels=["id", "serialNumber"]),
+                                  'SmartZone controller cluster role',
+                                  labels=["id", "serialNumber"]),
             'uptimeInSec':
                 CounterMetricFamily('smartzone_controller_uptime_seconds',
-                'Controller uptime in sections',
-                labels=["id"]),
+                                    'Controller uptime in sections',
+                                    labels=["id"]),
             'version':
                 GaugeMetricFamily('smartzone_controller_version',
-                'Controller version',
-                labels=["id", "version"]),
+                                  'Controller version',
+                                  labels=["id", "version"]),
             'apVersion':
                 GaugeMetricFamily('smartzone_controller_ap_firmware_version',
-                'Firmware version on controller APs',
-                labels=["id", "apVersion"])
+                                  'Firmware version on controller APs',
+                                  labels=["id", "apVersion"])
         }
 
         zone_metrics = {
             'totalAPs':
                 GaugeMetricFamily('smartzone_zone_total_aps',
-                'Total number of APs in zone',
-                labels=["zone_name","zone_id"]),
+                                  'Total number of APs in zone',
+                                  labels=["zone_name", "zone_id"]),
             'discoveryAPs':
                 GaugeMetricFamily('smartzone_zone_discovery_aps',
-                'Number of zone APs in discovery state',
-                labels=["zone_name","zone_id"]),
+                                  'Number of zone APs in discovery state',
+                                  labels=["zone_name", "zone_id"]),
             'connectedAPs':
                 GaugeMetricFamily('smartzone_zone_connected_aps',
-                'Number of connected zone APs',
-                labels=["zone_name","zone_id"]),
+                                  'Number of connected zone APs',
+                                  labels=["zone_name", "zone_id"]),
             'disconnectedAPs':
                 GaugeMetricFamily('smartzone_zone_disconnected_aps',
-                'Number of disconnected zone APs',
-                labels=["zone_name","zone_id"]),
+                                  'Number of disconnected zone APs',
+                                  labels=["zone_name", "zone_id"]),
             'clients':
                 GaugeMetricFamily('smartzone_zone_total_connected_clients',
-                'Total number of connected clients in zone',
-                labels=["zone_name","zone_id"])
+                                  'Total number of connected clients in zone',
+                                  labels=["zone_name", "zone_id"])
+        }
+
+        system_metric = {
+            'cpu': {
+                'percent':
+                    GaugeMetricFamily('smartzone_system_cpu_usage',
+                                      'SmartZone system CPU usage',
+                                      labels=["id"])
+            },
+            'disk': {
+                'total':
+                    GaugeMetricFamily('smartzone_system_disk_size',
+                                      'SmartZone system disk size',
+                                      labels=["id"]),
+                'free':
+                    GaugeMetricFamily('smartzone_system_disk_free',
+                                      'SmartZone system disk free space',
+                                      labels=["id"]),
+            },
+            'memory': {
+                'percent':
+                    GaugeMetricFamily('smartzone_system_memory_usage',
+                                      'SmartZone system memory usage',
+                                      labels=["id"])
+            },
+            'control': {
+                'rxBps':
+                    GaugeMetricFamily('smartzone_system_port_rxBps',
+                                      'SmartZone system port  rxBps (Throughput)',
+                                      labels=["id", "port"]),
+                'rxBytes':
+                    GaugeMetricFamily('smartzone_system_port_rxBytes',
+                                      'SmartZone system port  total rxBytes',
+                                      labels=["id", "port"]),
+                'rxDropped':
+                    GaugeMetricFamily('smartzone_system_port_rxDropped',
+                                      'SmartZone system port  total rxDropped',
+                                      labels=["id", "port"]),
+                'rxPackets':
+                    GaugeMetricFamily('smartzone_system_port_rxPackets',
+                                      'SmartZone system port  total rxPackets',
+                                      labels=["id", "port"]),
+                'txBps':
+                    GaugeMetricFamily('smartzone_system_port_txBps',
+                                      'SmartZone system port  txBps (Throughput)',
+                                      labels=["id", "port"]),
+                'txBytes':
+                    GaugeMetricFamily('smartzone_system_port_txBytes',
+                                      'SmartZone system port  total txBytes',
+                                      labels=["id", "port"]),
+                'txDropped':
+                    GaugeMetricFamily('smartzone_system_port_txDropped',
+                                      'SmartZone system port  total txDropped',
+                                      labels=["id", "port"]),
+                'txPackets':
+                    GaugeMetricFamily('smartzone_system_port_txPackets',
+                                      'SmartZone system port  total txPackets',
+                                      labels=["id", "port"])
+            },
+            'management': {
+                'rxBps':
+                    GaugeMetricFamily('smartzone_system_port_rxBps',
+                                      'SmartZone system port rxBps (Throughput)',
+                                      labels=["id", "port"]),
+                'rxBytes':
+                    GaugeMetricFamily('smartzone_system_port_rxBytes',
+                                      'SmartZone system port total rxBytes',
+                                      labels=["id", "port"]),
+                'rxDropped':
+                    GaugeMetricFamily('smartzone_system_port_rxDropped',
+                                      'SmartZone system port total rxDropped',
+                                      labels=["id", "port"]),
+                'rxPackets':
+                    GaugeMetricFamily('smartzone_system_port_rxPackets',
+                                      'SmartZone system port total rxPackets',
+                                      labels=["id", "port"]),
+                'txBps':
+                    GaugeMetricFamily('smartzone_system_port_txBps',
+                                      'SmartZone system port txBps (Throughput)',
+                                      labels=["id", "port"]),
+                'txBytes':
+                    GaugeMetricFamily('smartzone_system_port_txBytes',
+                                      'SmartZone system port total txBytes',
+                                      labels=["id", "port"]),
+                'txDropped':
+                    GaugeMetricFamily('smartzone_system_port_txDropped',
+                                      'SmartZone system port total txDropped',
+                                      labels=["id", "port"]),
+                'txPackets':
+                    GaugeMetricFamily('smartzone_system_port_txPackets',
+                                      'SmartZone system port total txPackets',
+                                      labels=["id", "port"])
+            },
+            'cluster': {
+                'rxBps':
+                    GaugeMetricFamily('smartzone_system_port_rxBps',
+                                      'SmartZone system port rxBps (Throughput)',
+                                      labels=["id", "port"]),
+                'rxBytes':
+                    GaugeMetricFamily('smartzone_system_port_rxBytes',
+                                      'SmartZone system port total rxBytes',
+                                      labels=["id", "port"]),
+                'rxDropped':
+                    GaugeMetricFamily('smartzone_system_port_rxDropped',
+                                      'SmartZone system port total rxDropped',
+                                      labels=["id", "port"]),
+                'rxPackets':
+                    GaugeMetricFamily('smartzone_system_port_rxPackets',
+                                      'SmartZone system port total rxPackets',
+                                      labels=["id", "port"]),
+                'txBps':
+                    GaugeMetricFamily('smartzone_system_port_txBps',
+                                      'SmartZone system port txBps (Throughput)',
+                                      labels=["id", "port"]),
+                'txBytes':
+                    GaugeMetricFamily('smartzone_system_port_txBytes',
+                                      'SmartZone system port total txBytes',
+                                      labels=["id", "port"]),
+                'txDropped':
+                    GaugeMetricFamily('smartzone_system_port_txDropped',
+                                      'SmartZone system port total txDropped',
+                                      labels=["id", "port"]),
+                'txPackets':
+                    GaugeMetricFamily('smartzone_system_port_txPackets',
+                                      'SmartZone system port total txPackets',
+                                      labels=["id", "port"])
+            },
+            'port1': {
+                'rxBps':
+                    GaugeMetricFamily('smartzone_system_port_rxBps',
+                                      'SmartZone system port rxBps (Throughput)',
+                                      labels=["id", "port"]),
+                'rxBytes':
+                    GaugeMetricFamily('smartzone_system_port_rxBytes',
+                                      'SmartZone system port total rxBytes',
+                                      labels=["id", "port"]),
+                'rxDropped':
+                    GaugeMetricFamily('smartzone_system_port_rxDropped',
+                                      'SmartZone system port total rxDropped',
+                                      labels=["id", "port"]),
+                'rxPackets':
+                    GaugeMetricFamily('smartzone_system_port_rxPackets',
+                                      'SmartZone system port total rxPackets',
+                                      labels=["id", "port"]),
+                'txBps':
+                    GaugeMetricFamily('smartzone_system_port_txBps',
+                                      'SmartZone system port txBps (Throughput)',
+                                      labels=["id", "port"]),
+                'txBytes':
+                    GaugeMetricFamily('smartzone_system_port_txBytes',
+                                      'SmartZone system port total txBytes',
+                                      labels=["id", "port"]),
+                'txDropped':
+                    GaugeMetricFamily('smartzone_system_port_txDropped',
+                                      'SmartZone system port total txDropped',
+                                      labels=["id", "port"]),
+                'txPackets':
+                    GaugeMetricFamily('smartzone_system_port_txPackets',
+                                      'SmartZone system port total txPackets',
+                                      labels=["id", "port"])
+            },
+            'port2': {
+                'rxBps':
+                    GaugeMetricFamily('smartzone_system_port_rxBps',
+                                      'SmartZone system port rxBps (Throughput)',
+                                      labels=["id", "port"]),
+                'rxBytes':
+                    GaugeMetricFamily('smartzone_system_port_rxBytes',
+                                      'SmartZone system port total rxBytes',
+                                      labels=["id", "port"]),
+                'rxDropped':
+                    GaugeMetricFamily('smartzone_system_port_rxDropped',
+                                      'SmartZone system port total rxDropped',
+                                      labels=["id", "port"]),
+                'rxPackets':
+                    GaugeMetricFamily('smartzone_system_port_rxPackets',
+                                      'SmartZone system port total rxPackets',
+                                      labels=["id", "port"]),
+                'txBps':
+                    GaugeMetricFamily('smartzone_system_port_txBps',
+                                      'SmartZone system port txBps (Throughput)',
+                                      labels=["id", "port"]),
+                'txBytes':
+                    GaugeMetricFamily('smartzone_system_port_txBytes',
+                                      'SmartZone system port total txBytes',
+                                      labels=["id", "port"]),
+                'txDropped':
+                    GaugeMetricFamily('smartzone_system_port_txDropped',
+                                      'SmartZone system port total txDropped',
+                                      labels=["id", "port"]),
+                'txPackets':
+                    GaugeMetricFamily('smartzone_system_port_txPackets',
+                                      'SmartZone system port total txPackets',
+                                      labels=["id", "port"])
+            }
         }
 
         ap_list = {
             'mac':
                 GaugeMetricFamily('smartzone_aps_list_ap_mac',
-                'SmartZone APs list ap mac',
-                labels=["zone_id","ap_mame","mac"]),
+                                  'SmartZone APs list ap mac',
+                                  labels=["zone_id", "ap_mame", "mac"]),
             'apGroupId':
                 GaugeMetricFamily('smartzone_aps_list_ap_groupId',
-                'SmartZone APs list ap groupId',
-                labels=["zone_id","ap_mame","groupId"]),
+                                  'SmartZone APs list ap groupId',
+                                  labels=["zone_id", "ap_mame", "groupId"]),
             'serial':
                 GaugeMetricFamily('smartzone_aps_list_ap_serial',
-                'SmartZone APs list ap serial number',
-                labels=["zone_id","ap_mame","serial"])
+                                  'SmartZone APs list ap serial number',
+                                  labels=["zone_id", "ap_mame", "serial"])
         }
-
-        # ap_metrics = {
-        #     'alerts':
-        #         GaugeMetricFamily('smartzone_ap_alerts',
-        #         'Number of AP alerts',
-        #         labels=["zone","ap_group","mac","name","lat","long"]),
-        #     'latency24G':
-        #         GaugeMetricFamily('smartzone_ap_latency_24g_milliseconds',
-        #         'AP latency on 2.4G channels in milliseconds',
-        #         labels=["zone","ap_group","mac","name","lat","long"]),
-        #     'latency50G':
-        #         GaugeMetricFamily('smartzone_ap_latency_5g_milliseconds',
-        #         'AP latency on 5G channels in milliseconds',
-        #         labels=["zone","ap_group","mac","name","lat","long"]),
-        #     'numClients24G':
-        #         GaugeMetricFamily('smartzone_ap_connected_clients_24g',
-        #         'Number of clients connected to 2.4G channels on this AP',
-        #         labels=["zone","ap_group","mac","name","lat","long"]),
-        #     'numClients5G':
-        #         GaugeMetricFamily('smartzone_ap_connected_clients_5g',
-        #         'Number of clients connected to 5G channels on this AP',
-        #         labels=["zone","ap_group","mac","name","lat","long"]),
-        #     'status':
-        #         GaugeMetricFamily('smartzone_ap_status',
-        #         'AP status',
-        #         labels=["zone","ap_group","mac","name","status","lat","long"])
-        #         }
 
         self.get_session()
 
+        id = 0
         # Get SmartZone controller metrics
         for c in self.get_metrics(controller_metrics, 'controller')['list']:
             id = c['id']
             for s in self._statuses:
                 if s == 'uptimeInSec':
-                     controller_metrics[s].add_metric([id], c.get(s))
+                    controller_metrics[s].add_metric([id], c.get(s))
                 # Export a dummy value for string-only metrics
                 else:
-                     extra = c[s]
-                     controller_metrics[s].add_metric([id, extra], 1)
+                    extra = c[s]
+                    controller_metrics[s].add_metric([id, extra], 1)
 
         for m in controller_metrics.values():
             yield m
+
+        # Get SmartZone system metric
+
+        path = 'controller/' + id + '/statistics'
+        system = self.get_metrics(system_metric, path)
+        for c in system_metric:
+            varList = list(system_metric[c].keys())
+            for s in varList:
+                # Add dummy comment (port name) for port statistic
+                if c == 'port1' or c == 'port2' or c == 'control' or c == 'cluster' or c == 'management':
+                    system_metric[c][s].add_metric([id, c], system[0][c].get(s))
+                # For normal metric
+                else:
+                    system_metric[c][s].add_metric([id], system[0][c].get(s))
+            for m in system_metric[c].values():
+                yield m
 
         # Get SmartZone inventory per zone
         # For each zone captured from the query:
@@ -228,37 +412,6 @@ class SmartZoneCollector():
         for m in ap_list.values():
             yield m
 
-        # Get SmartZone AP metrics
-        # Generate the metrics based on the values
-        # for ap in self.get_metrics(ap_metrics, 'aps')['list']:
-        #     try:
-        #         lat = ap.get('deviceGps').split(',')[0]
-        #         long = ap.get('deviceGps').split(',')[1]
-        #     except IndexError:
-        #         lat = 'none'
-        #         long = 'none'
-        #     for s in self._statuses:
-        #         # 'Status' is a string value only, so we can't export the default value
-        #         if s == 'status':
-        #             state_name = ['Online','Offline','Flagged']
-        #             # By default set value to 0 and increase to 1 to reflect current state
-        #             # Similar to how node_exporter handles systemd states
-        #             for n in state_name:
-        #                 value = 0
-        #                 if ap.get(s) == str(n):
-        #                     value = 1
-        #                 # Wrap the zone and group names in str() to avoid issues with None values at export time
-        #                 ap_metrics[s].add_metric([str(ap['zoneName']), str(ap['apGroupName']), ap['apMac'], ap['deviceName'], n, lat, long], value)
-        #         else:
-        #             if ap.get(s) is not None:
-        #                 ap_metrics[s].add_metric([str(ap['zoneName']), str(ap['apGroupName']), ap['apMac'], ap['deviceName'], lat, long], ap.get(s))
-        #             # Return 0 for metrics with values of None
-        #             else:
-        #                 ap_metrics[s].add_metric([str(ap['zoneName']), str(ap['apGroupName']), ap['apMac'], ap['deviceName'], lat, long], 0)
-
-        # for m in ap_metrics.values():
-        #     yield m
-
 
 # Function to parse command line arguments and pass them to the collector
 def parse_args():
@@ -270,16 +423,20 @@ def parse_args():
     required_named = parser.add_argument_group('required named arguments')
     required_named.add_argument('-u', '--user', help='SmartZone API user', required=True)
     required_named.add_argument('-p', '--password', help='SmartZone API password', required=True)
-    required_named.add_argument('-t', '--target', help='Target URL and port to access SmartZone, e.g. https://smartzone.example.com:8443', required=True)
+    required_named.add_argument('-t', '--target',
+                                help='Target URL and port to access SmartZone, e.g. https://smartzone.example.com:8443',
+                                required=True)
 
     # Add store_false action to store true/false values, and set a default of True
     parser.add_argument('--insecure', action='store_false', help='Allow insecure SSL connections to Smartzone')
 
     # Specify integer type for the listening port
-    parser.add_argument('--port', type=int, default=9345, help='Port on which to expose metrics and web interface (default=9345)')
+    parser.add_argument('--port', type=int, default=9345,
+                        help='Port on which to expose metrics and web interface (default=9345)')
 
     # Now that we've added the arguments, parse them and return the values as output
     return parser.parse_args()
+
 
 def main():
     try:
@@ -289,7 +446,7 @@ def main():
         # Start HTTP server on specified port
         start_http_server(port)
         if args.insecure == False:
-             print('WARNING: Connection to {} may not be secure.'.format(args.target))
+            print('WARNING: Connection to {} may not be secure.'.format(args.target))
         print("Polling {}. Listening on ::{}".format(args.target, port))
         while True:
             time.sleep(1)
