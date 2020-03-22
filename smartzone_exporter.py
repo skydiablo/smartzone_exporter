@@ -460,12 +460,12 @@ class SmartZoneCollector():
             domain_id = c['id']
             domain_name = c['name']
             for s in self._statuses:
-                if s == 'uptimeInSec':
-                    domain_metrics[s].add_metric([domain_id, domain_name], c.get(s))
-                # Export a dummy value for string-only metrics
-                else:
+                if s == 'domainType':
                     extra = c[s]
                     domain_metrics[s].add_metric([domain_id, domain_name, extra], 1)
+                else:
+                    domain_metrics[s].add_metric([domain_id, domain_name], c.get(s))
+                    
         for m in domain_metrics.values():
             yield m
 
