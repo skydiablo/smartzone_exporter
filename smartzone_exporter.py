@@ -17,6 +17,10 @@ import argparse
 from prometheus_client import start_http_server, Summary
 from prometheus_client.core import GaugeMetricFamily, CounterMetricFamily, REGISTRY
 
+# Import Treading and queue
+import queue
+import threading
+
 
 # Create SmartZoneCollector as a class - in Python3, classes inherit object as a base class
 # Only need to specify for compatibility or in Python2
@@ -77,7 +81,8 @@ class SmartZoneCollector():
             r = requests.post('{}/wsg/api/public/v9_0/{}'.format(self._target, api_path), json=raw,
                               headers=self._headers, verify=self._insecure)
         else:
-            r = requests.get('{}/wsg/api/public/v9_0/{}'.format(self._target, api_path+'?listSize=1000'), headers=self._headers,
+            r = requests.get('{}/wsg/api/public/v9_0/{}'.format(self._target, api_path + '?listSize=1000'),
+                             headers=self._headers,
                              verify=self._insecure)
         result = json.loads(r.text)
         return result
@@ -356,6 +361,10 @@ class SmartZoneCollector():
         }
 
         ap_metrics = {
+            'mac':
+                GaugeMetricFamily('smartzone_ap_mac',
+                                  'SmartZone AP mac',
+                                  labels=["ap_mac", "mac"]),
             'model':
                 GaugeMetricFamily('smartzone_ap_model',
                                   'SmartZone AP model',
@@ -395,7 +404,7 @@ class SmartZoneCollector():
             'uptime':
                 GaugeMetricFamily('smartzone_ap_uptime',
                                   'SmartZone AP uptime',
-                                  labels=["ap_mac"]),
+                                  labels=["mac"]),
             'clientCount':
                 GaugeMetricFamily('smartzone_ap_clientCount',
                                   'SmartZone AP client count',
@@ -546,15 +555,56 @@ class SmartZoneCollector():
         for m in ap_list.values():
             yield m
 
-        for ap_mac in ap_glob_mac:
-            path = 'aps/' + ap_mac + '/operational/summary'
-            ap_detail = self.get_metrics(ap_metrics, path)
-            for d in self._statuses:
-                if d == 'description' or d == 'version' or d == 'model' or d == 'zoneId' or d == 'connectionState':
+        num_worker_threads = 10
+
+        def source():
+            return ap_glob_mac
+
+        def worker():
+            while True:
+                item = q.get()
+                if item is None:
+                    break
+                path = 'aps/' + item + '/operational/summary'
+                r.put(self.get_metrics(ap_metrics, path))
+                q.task_done()
+
+        # Queue for threads
+        q = queue.Queue()
+
+        # Queue for result from api
+        r = queue.Queue()
+
+        threads = []
+
+        for i in range(num_worker_threads):
+            t = threading.Thread(target=worker)
+            t.start()
+            threads.append(t)
+
+        for item in source():
+            q.put(item)
+
+        # block until all tasks are done
+        q.join()
+
+        # stop workers
+        for i in range(num_worker_threads):
+            q.put(None)
+
+        for t in threads:
+            t.join()
+
+        ap_mac = 0
+        for i in range(r.qsize()):
+            ap_detail = r.get(block=True, timeout=None)
+            for d in list(ap_metrics.keys()):
+                if d == 'mac':
+                    ap_mac = ap_detail[d]
+                if d == 'description' or d == 'version' or d == 'model' or d == 'zoneId' or d == 'mac' or d == 'connectionState':
                     extra = ap_detail[d]
                     ap_metrics[d].add_metric([ap_mac, extra], 1)
                 else:
-
                     ap_metrics[d].add_metric([ap_mac], ap_detail.get(d))
 
         for m in ap_metrics.values():
@@ -597,7 +647,6 @@ class SmartZoneCollector():
                 else:
                     extra = c[s]
                     license_metrics[s].add_metric([license_name, extra], 1)
-
 
         for m in license_metrics.values():
             yield m
