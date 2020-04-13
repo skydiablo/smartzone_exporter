@@ -17,6 +17,16 @@ The following metrics are currently supported:
  * Licences
  * domain metrics (domain type, parent domain id, sub domain count, ap count, zone count)
 
+## Docker Usage
+* pull repozitory
+``` docker
+docker pull byjastrab/smartzone_exporter
+```
+* create .env file
+* Run docker
+``` docker
+docker run -p 9345:9345 --env-file=.env --name smartzone_exporter
+```
 
 ## Usage
 ```
