@@ -25,7 +25,7 @@ docker pull byjastrab/smartzone_exporter
 * create .env file
 * Run docker
 ``` docker
-docker run -p 9345:9345 --env-file=.env --name smartzone_exporter
+docker run -p 9345:9345 --env-file=.env --name smartzone_exporter byjastrab/smartzone_exporter
 ```
 
 ## Usage
